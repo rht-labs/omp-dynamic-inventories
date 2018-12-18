@@ -6,18 +6,24 @@ import datetime
 from datetime import date
 from configparser import ConfigParser
 
+import os
+
 
 try:
     import json
 except ImportError:
     import simplejson as json
 
-# Import the atlassian.ini config file
-config = ConfigParser()
-config.read('./atlassian.ini')
 
-api_url = config['default']['api_url']
-my_tag = config['default']['tag']
+# Define the following environment variables:
+# API_URL - The base url for the omp-data-api
+# TAG - The tag you want to pull users and groups from.
+# CONFLUENCE_SOURCE_KEY - The key of the confluence workspace to copy from.
+# ATLASSIAN_URL - The URL to your atlassian workspace (in the form of https://<workspace>.atlassian.net)
+# ATLASSIAN_USERNAME - The username for your Atlassian account
+# ATLASSIAN_PASSWORD - The api token or password for your Atlassian account
+api_url = os.environ['API_URL']
+my_tag = os.environ['TAG']
 
 users_url = api_url + "/users"
 groups_url = api_url + "/groups"
@@ -47,9 +53,9 @@ class Inventory(object):
         r_users = requests.get(my_tag_users).json()
 
         atlassian = {
-            "url": config['atlassian']['url'],
-            "username": config['atlassian']['username'],
-            "password": config['atlassian']['password'],
+            "url": os.environ['ATLASSIAN_URL'],
+            "username": os.environ['ATLASSIAN_USERNAME'],
+            "password": os.environ['ATLASSIAN_PASSWORD'],
             "users": [],
             "groups": [],
             "jira": {
@@ -73,7 +79,7 @@ class Inventory(object):
                 }
             },
             "confluence": {
-                "source": {"key": config['confluence']['source_key']},
+                "source": {"key": os.environ['CONFLUENCE_SOURCE_KEY']},
                 "destination": {
                     "key": self.generate_key(),
                     "name": self.return_value_with_tags(residencies_url, my_tag, my_tag, 'name'),
