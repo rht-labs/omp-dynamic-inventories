@@ -55,8 +55,10 @@ class Inventory(object):
             "url": os.environ['ATLASSIAN_URL'],
             "username": os.environ['ATLASSIAN_USERNAME'],
             "password": os.environ['ATLASSIAN_PASSWORD'],
-            "users": [],
-            "groups": [],
+            "identities": {
+                "users": [],
+                "groups": [],
+            },
             "jira": {
                 "admin_group": self.return_value_with_tags(groups_url, 'atlassian_admin', my_tag, 'group_name'),
                 "lead": self.return_value_with_tags(users_url, 'atlassian_lead', my_tag, 'user_name'),
@@ -97,7 +99,7 @@ class Inventory(object):
 
             valid_groups = [value for value in valid_groups if value != None]
 
-            atlassian['users'].append({
+            atlassian['identities']['users'].append({
                 "first_name": self.check_if_valid(user, 'first_name'),
                 "last_name": self.check_if_valid(user, 'last_name'),
                 "email": self.check_if_valid(user, 'email'),
@@ -107,14 +109,15 @@ class Inventory(object):
 
             all_valid_groups = list(set(valid_groups + all_valid_groups))
 
-        atlassian['groups'] = all_valid_groups
+        atlassian['identities']['groups'] = all_valid_groups
 
-        atlassian = {       
+        atlassian = {
             "ansible_connection": "local",
             "atlassian": atlassian
         }
-        
-        self.inventory = {'all': {"hosts": ["localhost"], "vars": atlassian}}
+
+        self.inventory = {
+            'identity-hosts': {"hosts": ["localhost"], "vars": atlassian}}
 
     def does_group_with_tag_exist(self, tag, groups_list):
         r_groups = requests.get(groups_url + '/' + tag + ',' + my_tag).json()
