@@ -4,7 +4,6 @@ import argparse
 import requests
 import datetime
 from datetime import date
-from configparser import ConfigParser
 
 import os
 
@@ -110,7 +109,12 @@ class Inventory(object):
 
         atlassian['groups'] = all_valid_groups
 
-        self.inventory = atlassian
+        atlassian = {       
+            "ansible_connection": "local",
+            "atlassian": atlassian
+        }
+        
+        self.inventory = {'all': {"hosts": ["localhost"], "vars": atlassian}}
 
     def does_group_with_tag_exist(self, tag, groups_list):
         r_groups = requests.get(groups_url + '/' + tag + ',' + my_tag).json()
