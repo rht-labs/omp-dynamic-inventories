@@ -55,79 +55,65 @@ class Inventory(object):
             "url": os.environ['ATLASSIAN_URL'],
             "username": os.environ['ATLASSIAN_USERNAME'],
             "password": os.environ['ATLASSIAN_PASSWORD'],
-            "identities": {
-                "users": [],
-                "groups": [],
-            },
             "jira": {
-                "admin_group": self.return_value_with_tags(groups_url, 'atlassian_admin', my_tag, 'group_name'),
-                "lead": self.return_value_with_tags(users_url, 'atlassian_lead', my_tag, 'user_name'),
-                "core_team": self.return_value_with_tags(groups_url, 'atlassian_core_group', my_tag, 'group_name'),
+                "lead": self.return_value_with_tags(users_url, 'atlassian_lead', my_tag, 'email').split('@')[0],
                 "project": {
                     "name": self.return_value_with_tags(residencies_url, my_tag, my_tag, 'name'),
                     "key": self.generate_key(),
+                    "category_description": "residency",
                     "description": "Project for " + self.return_value_with_tags(residencies_url, my_tag, my_tag, 'name'),
-                    "category_name": "residency"
+                    "category_name": "residency2"
                 },
-                "group": {
-                    "team_member": self.return_value_with_tags(groups_url, 'atlassian_team_member', my_tag, 'group_name'),
-                    "viewer": self.return_value_with_tags(groups_url, 'atlassian_viewer', my_tag, 'group_name'),
-                    "lead": self.return_value_with_tags(groups_url, 'atlassian_group_lead', my_tag, 'group_name')
-                },
+                "groups": self.get_group_roles(my_tag),
                 "permission_scheme": {
                     "name": self.generate_key(),
                     "description": "permission scheme for" + self.return_value_with_tags(residencies_url, my_tag, my_tag, 'name')
                 }
             },
             "confluence": {
-                "source": {"key": os.environ['CONFLUENCE_SOURCE_KEY']},
+                "source": {
+                    "key": os.environ['CONFLUENCE_SOURCE_KEY'],
+                },
                 "destination": {
                     "key": self.generate_key(),
-                    "name": self.return_value_with_tags(residencies_url, my_tag, my_tag, 'name'),
+                    "name": self.return_value_with_tags(residencies_url, my_tag, my_tag, 'name'),        
                     "description": "Residency wiki for " + self.return_value_with_tags(residencies_url, my_tag, my_tag, 'name')
                 }
             }
         }
-
-        all_valid_groups = []
-
-        for user in r_users:
-            valid_groups = []
-            for group in self.check_if_valid(user, 'tags', 'list'):
-                valid_groups.append(self.does_group_with_tag_exist(
-                    group, valid_groups))
-
-            valid_groups = [value for value in valid_groups if value != None]
-
-            atlassian['identities']['users'].append({
-                "first_name": self.check_if_valid(user, 'first_name'),
-                "last_name": self.check_if_valid(user, 'last_name'),
-                "email": self.check_if_valid(user, 'email'),
-                "state": "present",
-                "groups": valid_groups
-            })
-
-            all_valid_groups = list(set(valid_groups + all_valid_groups))
-
-        atlassian['identities']['groups'] = all_valid_groups
+        
 
         atlassian = {
             "ansible_connection": "local",
-            "atlassian": atlassian
+            "atlassian": atlassian,
         }
 
         self.inventory = {
-            'identity-hosts': {"hosts": ["localhost"], "vars": atlassian}}
+            'identity-hosts': {"hosts": ["localhost","jira", "confluence"], "vars": atlassian}}
 
-    def does_group_with_tag_exist(self, tag, groups_list):
-        r_groups = requests.get(groups_url + '/' + tag + ',' + my_tag).json()
+    def get_group_roles(self, tag):
+        atlassian_roles = []
 
-        if r_groups:
-            for group in r_groups:
-                if 'group_name' in group.keys():
-                    return group['group_name']
-                else:
-                    return None
+        atlassian_admins = requests.get(groups_url + '/' + tag + ',' + "atlassian_admin").json()
+        atlassian_members = requests.get(groups_url + '/' + tag + ',' + "atlassian_team_member").json()
+        atlassian_viewers = requests.get(groups_url + '/' + tag + ',' + "atlassian_viewer").json()
+
+        for admin in atlassian_admins:
+            atlassian_roles.append({
+                "name": admin['group_name'],
+                "role": "admin"})
+                
+        for member in atlassian_members:
+            atlassian_roles.append({
+                "name": member["group_name"],
+                "role": "member"})
+
+        for viewer in atlassian_viewers:
+            atlassian_roles.append({
+                "name": viewer["group_name"],
+                "role": "read"})
+                
+        return atlassian_roles
 
     def return_value_with_tags(self, url, tag, my_tag, value):
         r = requests.get(url + '/' + tag + ',' + my_tag).json()
