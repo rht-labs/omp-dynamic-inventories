@@ -84,12 +84,10 @@ class Inventory(object):
         
 
         atlassian = {
-            "ansible_connection": "local",
             "atlassian": atlassian,
         }
 
-        self.inventory = {
-            'identity-hosts': {"hosts": ["localhost","jira", "confluence"], "vars": atlassian}}
+        self.inventory = {'all': { "vars": atlassian}}
 
     def get_group_roles(self, tag):
         atlassian_roles = []
