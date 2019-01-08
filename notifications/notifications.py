@@ -19,8 +19,8 @@ except ImportError:
 # PASSWORD - The password for said username
 api_url = os.environ['API_URL']
 my_tag = os.environ['TAG']
-username = os.environ['USERNAME']
-password = os.environ['PASSWORD']
+username = os.environ['EMAIL_USERNAME']
+password = os.environ['EMAIL_PASSWORD']
 
 users_url = api_url + "/users"
 groups_url = api_url + "/groups"
@@ -57,8 +57,8 @@ class Inventory(object):
                 "username": username,
                 "password": password,
                 "to": self.get_send_addresses(r_users),
-                "subject": "",
-                "body":"",
+                "subject": "Testing",
+                "body":"<html><body><h1>Testing</h1></body></html>",
                 "subtype": "html"
             }
         }
@@ -74,7 +74,11 @@ class Inventory(object):
             return r[0][value]
 
     def get_send_addresses(self, user_request):
-        return []
+        send_addresses = []
+        for user in user_request:
+            send_addresses.append(user['email'])
+
+        return send_addresses
 
     def parse_cli_args(self):
         parser = argparse.ArgumentParser(
