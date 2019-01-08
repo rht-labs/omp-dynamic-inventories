@@ -2,7 +2,7 @@
 
 import argparse
 import requests
-
+import yaml
 import os
 
 
@@ -18,9 +18,11 @@ except ImportError:
 # USERNAME - The email username from which you want to send notifications from 
 # PASSWORD - The password for said username
 api_url = os.environ['API_URL']
+email_content_url = os.environ['EMAIL_CONTENT_URL']
 my_tag = os.environ['TAG']
 username = os.environ['EMAIL_USERNAME']
 password = os.environ['EMAIL_PASSWORD']
+
 
 users_url = api_url + "/users"
 groups_url = api_url + "/groups"
@@ -49,16 +51,19 @@ class Inventory(object):
 
         my_tag_users = users_url + '/' + my_tag
         r_users = requests.get(my_tag_users).json()
+        email_content = yaml.load(requests.get(email_content_url).text)
 
         mail = {
+            "users": self.parse_user_data(r_users),
+            "body": email_content['body'],
+            "email_to": self.generate_send_list(r_users),
+            "title": email_content['title'],
             "mail": {
                 "host": "smtp.gmail.com",
                 "port":"465",
                 "username": username,
                 "password": password,
-                "to": self.get_send_addresses(r_users),
                 "subject": "Testing",
-                "body":"<html><body><h1>Testing</h1></body></html>",
                 "subtype": "html"
             }
         }
@@ -73,12 +78,24 @@ class Inventory(object):
         else:
             return r[0][value]
 
-    def get_send_addresses(self, user_request):
-        send_addresses = []
-        for user in user_request:
-            send_addresses.append(user['email'])
+    def parse_user_data(self, user_data):
+        parsed_user_data = []
+        for user in user_data:
+            parsed_user_data.append({
+                'first_name': user['first_name'],
+                'last_name': user['last_name'],
+                'email': user['email'],
+                'notify_user': True
+                })
 
-        return send_addresses
+        return parsed_user_data
+
+    def generate_send_list(self, user_data):
+        send_list = []
+        for user in user_data:
+            send_list.append(user['email'])
+        
+        return send_list
 
     def parse_cli_args(self):
         parser = argparse.ArgumentParser(
