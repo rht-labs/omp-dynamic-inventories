@@ -58,6 +58,7 @@ class Inventory(object):
             "body": email_content['body'],
             "email_to": self.generate_send_list(r_users),
             "title": email_content['title'],
+            "email_content_file": "/root/foo",
             "mail": {
                 "host": "smtp.gmail.com",
                 "port":"465",
