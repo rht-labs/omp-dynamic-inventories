@@ -14,6 +14,8 @@ except ImportError:
 
 # Define the following environment variables:
 # API_URL - The base url for the omp-data-api
+# EMAIL_CONTENT_URL - Should be a url which points a yaml file with the email content to send
+#                     The yaml file should cointain vars 'body' and 'title'.
 # TAG - The tag you want to pull users and groups from.
 # USERNAME - The email username from which you want to send notifications from 
 # PASSWORD - The password for said username
@@ -25,10 +27,6 @@ password = os.environ['EMAIL_PASSWORD']
 
 
 users_url = api_url + "/users"
-groups_url = api_url + "/groups"
-customers_url = api_url + "/customers"
-clusters_url = api_url + "/clusters"
-residencies_url = api_url + "/residencies"
 
 
 class Inventory(object):
@@ -54,48 +52,26 @@ class Inventory(object):
         email_content = yaml.load(requests.get(email_content_url).text)
 
         mail = {
-            "users": self.parse_user_data(r_users),
-            "body": email_content['body'],
-            "email_to": self.generate_send_list(r_users),
-            "title": email_content['title'],
-            "email_content_file": "/root/foo",
             "mail": {
                 "host": "smtp.gmail.com",
                 "port":"465",
+                "secure": "always",
                 "username": username,
                 "password": password,
-                "subject": "Testing",
-                "subtype": "html"
+                "to": self.generate_send_list(r_users),
+                "subject": email_content['title'],
+                "subtype": "html",
+                "body": email_content['body'],
             }
         }
 
         self.inventory = {'all': { "vars": mail}}
 
-
-    def return_value_with_tags(self, url, tag, my_tag, value):
-        r = requests.get(url + '/' + tag + ',' + my_tag).json()
-        if not r:
-            return ''
-        else:
-            return r[0][value]
-
-    def parse_user_data(self, user_data):
-        parsed_user_data = []
-        for user in user_data:
-            parsed_user_data.append({
-                'first_name': user['first_name'],
-                'last_name': user['last_name'],
-                'email': user['email'],
-                'notify_user': True
-                })
-
-        return parsed_user_data
-
     def generate_send_list(self, user_data):
         send_list = []
         for user in user_data:
             send_list.append(user['email'])
-        
+
         return send_list
 
     def parse_cli_args(self):
