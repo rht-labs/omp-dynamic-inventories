@@ -52,16 +52,17 @@ class Inventory(object):
         email_content = yaml.load(requests.get(email_content_url).text)
 
         mail = {
+            "title": email_content['title'],
+            "body": email_content['body'],
+            "users": self.generate_user_info_list(r_users),
+            "email_to": self.generate_send_list(r_users),
             "mail": {
                 "host": "smtp.gmail.com",
                 "port":"465",
                 "secure": "always",
                 "username": username,
                 "password": password,
-                "to": self.generate_send_list(r_users),
-                "subject": email_content['title'],
                 "subtype": "html",
-                "body": email_content['body'],
             }
         }
 
@@ -73,6 +74,19 @@ class Inventory(object):
             send_list.append(user['email'])
 
         return send_list
+
+    def generate_user_info_list(self, user_data):
+        user_info_list = []
+        for user in user_data:
+            user_info_list.append({
+                'first_name': user['first_name'],
+                'username': user['email'].split('@')[0],
+                'password': 'foo',
+                'email': user['email'],
+                'notify_user': True
+                })
+        return user_info_list
+
 
     def parse_cli_args(self):
         parser = argparse.ArgumentParser(
